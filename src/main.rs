@@ -54,6 +54,7 @@ fn main() {
         }
 
         let str = String::from_utf8_lossy(&buf[0..len]);
+        println!("{}", str.trim());
         len = 0;
 
         let splits: Vec<f32> = str
@@ -62,16 +63,22 @@ fn main() {
             .flat_map(|s| s.parse().ok())
             .collect();
 
-        if splits.len() != 3 {
+        if splits.len() != 6 {
             continue;
         }
-        println!("{splits:?}");
 
-        let x = splits[0];
-        let y = splits[1];
-        let z = splits[2];
+        if splits[0..3]
+            .iter()
+            .zip(splits[3..6].iter())
+            .any(|(v1, v2)| v1 != v2)
+        {
+            continue;
+        }
+        // println!("{splits:?}");
 
-        let bytes = encode_data(x, y, z);
+        let vals = [splits[0], splits[1], splits[2]];
+
+        let bytes = encode_data(vals[0], vals[1], vals[2]);
         socket.send(&bytes).unwrap();
     }
 }
