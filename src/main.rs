@@ -39,19 +39,22 @@ fn main() {
     socket.set_broadcast(true).unwrap();
     socket.connect("255.255.255.255:8081").unwrap();
 
-    let mut buf = Vec::with_capacity(100);
+    let mut buf = vec![0; 100];
+    let mut len = 0;
     loop {
         let to_read = serial.bytes_to_read().unwrap();
         if to_read == 0 {
-            std::thread::sleep(Duration::from_millis(5));
+            std::thread::sleep(Duration::from_millis(1));
             continue;
         }
 
-        buf.resize(to_read as usize, 0);
-        serial.read_exact(&mut buf).unwrap();
+        len += serial.read(&mut buf[len..]).unwrap();
+        if !(buf[0..len]).contains(&b'\n') {
+            continue;
+        }
 
-        let str = String::from_utf8_lossy(&buf);
-        print!("{str}");
+        let str = String::from_utf8_lossy(&buf[0..len]);
+        len = 0;
 
         let splits: Vec<f32> = str
             .trim()
@@ -62,6 +65,7 @@ fn main() {
         if splits.len() != 3 {
             continue;
         }
+        println!("{splits:?}");
 
         let x = splits[0];
         let y = splits[1];
@@ -70,12 +74,4 @@ fn main() {
         let bytes = encode_data(x, y, z);
         socket.send(&bytes).unwrap();
     }
-
-    // loop {
-    //     let bytes = encode_data(1.5, 2.5, 3.5);
-    //     socket.send(&bytes).unwrap();
-    //     println!("Data sent");
-
-    //     std::thread::sleep(Duration::from_secs(1));
-    // }
 }
